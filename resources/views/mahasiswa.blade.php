@@ -88,6 +88,43 @@
         <button type="submit">Simpan</button>
     </form>
 
+    <h2>Pencarian dan Filter</h2>
+
+    <form action="{{ route('mahasiswa.index') }}" method="GET">
+        <p>
+            <label for="q">Kata Kunci</label><br>
+            <input
+                type="text"
+                id="q"
+                name="q"
+                value="{{ $kataKunci }}"
+                placeholder="Cari NIM, nama, atau email"
+            >
+        </p>
+
+        <p>
+            <label for="filter_program_studi_id">Program Studi</label><br>
+            <select
+                id="filter_program_studi_id"
+                name="program_studi_id"
+            >
+                <option value="">-- Semua Program Studi --</option>
+
+                @foreach ($daftarProgramStudi as $prodi)
+                    <option
+                        value="{{ $prodi['id'] }}"
+                        @selected($programStudiId == $prodi['id'])
+                    >
+                        {{ $prodi['nama_prodi'] }}
+                    </option>
+                @endforeach
+            </select>
+        </p>
+
+        <button type="submit">Cari / Filter</button>
+        <a href="{{ route('mahasiswa.index') }}">Reset</a>
+    </form>
+
     <h2>Daftar Mahasiswa</h2>
 
     <table border="1">
@@ -98,6 +135,7 @@
                 <th>Email</th>
                 <th>Usia</th>
                 <th>Program Studi</th>
+                <th>Aksi</th>
             </tr>
         </thead>
 
@@ -109,10 +147,30 @@
                     <td>{{ $mahasiswa['email'] }}</td>
                     <td>{{ $mahasiswa['usia'] }}</td>
                     <td>{{ $mahasiswa['nama_prodi'] }}</td>
+                    <td>
+                        <a href="{{ route('mahasiswa.edit', $mahasiswa['id']) }}">
+                            Ubah
+                        </a>
+
+                        <form
+                            action="{{ route('mahasiswa.destroy', $mahasiswa['id']) }}"
+                            method="POST"
+                            style="display:inline;"
+                        >
+                            @csrf
+                            @method('DELETE')
+
+                            <button type="submit">
+                                Hapus
+                            </button>
+                        </form>
+                    </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="5">Belum ada data mahasiswa.</td>
+                    <td colspan="6">
+                        Belum ada data mahasiswa.
+                    </td>
                 </tr>
             @endforelse
         </tbody>
