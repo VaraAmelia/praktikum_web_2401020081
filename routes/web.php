@@ -196,3 +196,154 @@ Route::post('/mahasiswa', function (Request $request) {
         );
     }
 })->name('mahasiswa.store');
+Route::get('/mahasiswa/{id}/edit', function (int $id) {
+    try {
+        $pdo = DB::connection()->getPdo();
+
+        $ambilMahasiswa = $pdo->prepare(
+            'SELECT id, nim, nama, email, usia, program_studi_id
+             FROM mahasiswa
+             WHERE id = :id'
+        );
+
+        $ambilMahasiswa->execute([
+            'id' => $id,
+        ]);
+
+        $mahasiswa = $ambilMahasiswa->fetch(\PDO::FETCH_ASSOC);
+
+        if (!$mahasiswa) {
+            return redirect()->route('mahasiswa.index')
+                ->with('gagal', 'Data mahasiswa tidak ditemukan.');
+        }
+
+        $ambilProdi = $pdo->prepare(
+            'SELECT id, nama_prodi
+             FROM program_studi
+             ORDER BY nama_prodi'
+        );
+
+        $ambilProdi->execute();
+
+        $daftarProgramStudi = $ambilProdi->fetchAll(
+            \PDO::FETCH_ASSOC
+        );
+
+        return view('mahasiswa-edit', compact(
+            'mahasiswa',
+            'daftarProgramStudi'
+        ));
+
+    } catch (\Throwable $error) {
+        report($error);
+
+        return redirect()->route('mahasiswa.index')
+            ->with('gagal', 'Data tidak dapat dibaca.');
+    }
+})->name('mahasiswa.edit');
+Route::put('/mahasiswa/{id}', function (Request $request, int $id) {
+    $data = $request->validate([
+        'nim' => ['required', 'string', 'max:20'],
+        'nama' => ['required', 'string', 'max:100'],
+        'email' => ['required', 'email', 'max:100'],
+        'usia' => ['required', 'integer', 'min:15', 'max:100'],
+        'program_studi_id' => ['required', 'integer'],
+    ], [
+        'nim.required' => 'NIM wajib diisi.',
+        'nama.required' => 'Nama wajib diisi.',
+        'email.required' => 'Email wajib diisi.',
+        'email.email' => 'Format email tidak valid.',
+        'usia.required' => 'Usia wajib diisi.',
+        'usia.integer' => 'Usia harus berupa angka.',
+        'program_studi_id.required' => 'Program studi wajib dipilih.',
+    ]);
+
+    try {
+        $pdo = DB::connection()->getPdo();
+
+        $cekDuplikat = $pdo->prepare(
+            'SELECT COUNT(*) FROM mahasiswa
+             WHERE (nim = :nim OR email = :email)
+             AND id <> :id'
+        );
+
+        $cekDuplikat->execute([
+            'nim' => $data['nim'],
+            'email' => $data['email'],
+            'id' => $id,
+        ]);
+
+        if ((int) $cekDuplikat->fetchColumn() > 0) {
+            return back()->withInput()->with(
+                'gagal',
+                'NIM atau email sudah digunakan oleh mahasiswa lain.'
+            );
+        }
+
+        $ubah = $pdo->prepare(
+            'UPDATE mahasiswa
+             SET nim = :nim,
+                 nama = :nama,
+                 email = :email,
+                 usia = :usia,
+                 program_studi_id = :program_studi_id
+             WHERE id = :id'
+        );
+
+        $ubah->execute([
+            'nim' => $data['nim'],
+            'nama' => $data['nama'],
+            'email' => $data['email'],
+            'usia' => $data['usia'],
+            'program_studi_id' => $data['program_studi_id'],
+            'id' => $id,
+        ]);
+
+        return redirect()->route('mahasiswa.index')->with(
+            'berhasil',
+            'Data mahasiswa berhasil diperbarui.'
+        );
+
+    } catch (\Throwable $error) {
+        report($error);
+
+        return back()->withInput()->with(
+            'gagal',
+            'Data gagal diperbarui. Periksa koneksi dan data.'
+        );
+    }
+})->name('mahasiswa.update');
+Route::delete('/mahasiswa/{id}', function (int $id) {
+    try {
+        $pdo = DB::connection()->getPdo();
+
+        $hapus = $pdo->prepare(
+            'DELETE FROM mahasiswa
+             WHERE id = :id'
+        );
+
+        $hapus->execute([
+            'id' => $id,
+        ]);
+
+        if ($hapus->rowCount() === 0) {
+            return redirect()->route('mahasiswa.index')->with(
+                'gagal',
+                'Data mahasiswa tidak ditemukan.'
+            );
+        }
+
+        return redirect()->route('mahasiswa.index')->with(
+            'berhasil',
+            'Data mahasiswa berhasil dihapus.'
+        );
+
+    } catch (\Throwable $error) {
+        report($error);
+
+        return redirect()->route('mahasiswa.index')->with(
+            'gagal',
+            'Data gagal dihapus. Periksa koneksi dan data.'
+        );
+    }
+})->name('mahasiswa.destroy');
