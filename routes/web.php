@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Controllers\BukuController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -372,3 +373,5 @@ Route::delete('/mahasiswa/{id}', function (int $id) {
         );
     }
 })->name('mahasiswa.destroy');
+Route::get('/buku', [BukuController::class, 'index']);
+Route::get('/buku/{kode}', [BukuController::class, 'show']);
