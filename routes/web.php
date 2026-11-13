@@ -373,5 +373,4 @@ Route::delete('/mahasiswa/{id}', function (int $id) {
         );
     }
 })->name('mahasiswa.destroy');
-Route::get('/buku', [BukuController::class, 'index']);
-Route::get('/buku/{kode}', [BukuController::class, 'show']);
+Route::resource('buku', BukuController::class)->except('show');
